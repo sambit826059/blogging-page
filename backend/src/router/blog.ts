@@ -39,7 +39,7 @@ blogRouter.post('/', async (c) => {
   const body = await c.req.json();
   const authorId = c.get("userId")
   console.log(authorId);
-  
+
   try {
     const { success } = createBlogInput.safeParse(body);
     console.log(success);
@@ -125,7 +125,18 @@ blogRouter.get('/bulk', async (c) => {
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate())
 
-  const blogs = await prisma.blog.findMany();
+  const blogs = await prisma.blog.findMany({
+    select: {
+      content: true,
+      title: true,
+      id: true,
+      author: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
 
   return c.json({
     blogs
@@ -143,8 +154,18 @@ blogRouter.get('/:id', async (c) => {
   try {
     const blog = await prisma.blog.findFirst({
       where: {
-        id: Number(id)
+        id: id
       },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        author: {
+          select: {
+            name: true
+          }
+        }
+      }
     })
 
     return c.json({
@@ -152,6 +173,8 @@ blogRouter.get('/:id', async (c) => {
     })
   } catch (e) {
     c.status(411);
+    console.log(e);
+
     return c.json({
       message: "Error while fetching blog post"
     })
